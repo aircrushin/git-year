@@ -13,6 +13,7 @@ import {
   Star,
 } from 'lucide-react'
 import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { useTranslations } from 'next-intl'
 
 type GithubStats = {
   profile: {
@@ -48,6 +49,7 @@ const currentYear = new Date().getFullYear()
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
+  const t = useTranslations('home')
   const [form, setForm] = useState<FormState>({
     username: 'vercel',
     year: currentYear,
@@ -95,7 +97,7 @@ function App() {
       const data = await fetchGithubYearStats(form)
       setStats(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '获取数据失败，请稍后再试。')
+      setError(err instanceof Error ? err.message : t('errors.fetchFailed'))
       setStats(null)
     } finally {
       setLoading(false)
@@ -117,12 +119,18 @@ function App() {
       link.click()
     } catch (err) {
       console.error(err)
-      setError('卡片导出失败，请确认已解锁浏览器截图权限。')
+      setError(t('errors.downloadFailed'))
     }
   }
 
   const shareText = stats
-    ? `我在 ${form.year} 年完成了 ${stats.counts.commits} 次提交、${stats.counts.prs} 个 PR、${stats.counts.issues} 个 Issue，并收藏了 ${stats.counts.stars} 个项目。生成自 GitYear Studio。`
+    ? t('shareText', {
+        year: form.year,
+        commits: stats.counts.commits,
+        prs: stats.counts.prs,
+        issues: stats.counts.issues,
+        stars: stats.counts.stars,
+      })
     : ''
 
   return (
@@ -134,19 +142,18 @@ function App() {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-white/5 px-4 py-2 text-sm font-medium text-cyan-200 shadow-[0_10px_60px_-35px_rgba(34,211,238,0.7)]">
                 <Sparkles className="h-4 w-4" />
-                GitHub 年度贡献卡片 · 即刻生成
+                {t('hero.badge')}
               </div>
               <h1 className="mt-4 text-4xl md:text-5xl font-semibold leading-tight text-white [letter-spacing:-0.02em]">
-                输入 GitHub 用户名，自动聚合今年的 Commit、PR、Issue 与 Star 数据。
+                {t('hero.title')}
               </h1>
               <p className="mt-4 text-lg text-slate-300 max-w-2xl">
-                GitYear Studio 直接调用 GitHub API 生成可视化分享卡片，适配亮暗背景，支持一键导出 PNG。可选填
-                token，避免公共 API 限流。
+                {t('hero.description')}
               </p>
               <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-300">
-                <Badge>实时 API 拉取</Badge>
-                <Badge>交互式动效</Badge>
-                <Badge>中文 UI / 多色系</Badge>
+                <Badge>{t('hero.pillRealtime')}</Badge>
+                <Badge>{t('hero.pillMotion')}</Badge>
+                <Badge>{t('hero.pillColors')}</Badge>
               </div>
             </div>
             <div className="w-full md:w-auto md:min-w-[320px]">
@@ -170,25 +177,25 @@ function App() {
               <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                   icon={<GitCommit className="h-5 w-5" />}
-                  label="提交 Commit"
+                  label={t('statsCards.commits')}
                   value={stats.counts.commits}
                   accent="from-cyan-400 to-blue-500"
                 />
                 <StatCard
                   icon={<GitPullRequest className="h-5 w-5" />}
-                  label="合并 PR"
+                  label={t('statsCards.prs')}
                   value={stats.counts.prs}
                   accent="from-emerald-400 to-teal-500"
                 />
                 <StatCard
                   icon={<MessageSquare className="h-5 w-5" />}
-                  label="Issue & 讨论"
+                  label={t('statsCards.issues')}
                   value={stats.counts.issues}
                   accent="from-amber-400 to-orange-500"
                 />
                 <StatCard
                   icon={<Star className="h-5 w-5" />}
-                  label="今年收藏"
+                  label={t('statsCards.stars')}
                   value={stats.counts.stars}
                   accent="from-fuchsia-400 to-violet-500"
                 />
@@ -197,9 +204,9 @@ function App() {
               <div className="mt-10 grid gap-6 lg:grid-cols-3">
                 <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-6 shadow-xl shadow-cyan-500/5 lg:col-span-2">
                   <div className="flex items-center justify-between gap-4">
-                    <h2 className="text-xl font-semibold text-white">贡献构成与节奏</h2>
+                    <h2 className="text-xl font-semibold text-white">{t('overview.title')}</h2>
                     <div className="text-xs text-slate-400">
-                      数据区间：{form.year}-01-01 ~ {form.year}-12-31
+                      {t('overview.dateRange', { year: form.year })}
                     </div>
                   </div>
 
@@ -207,9 +214,11 @@ function App() {
                     <div className="rounded-xl border border-cyan-500/30 bg-slate-900/90 p-4 shadow-inner shadow-cyan-500/10">
                       <div className="flex justify-between text-sm text-cyan-400 font-mono">
                         <span className="flex items-center gap-2">
-                          <span className="text-cyan-500">{'>'}</span> 贡献占比
+                          <span className="text-cyan-500">{'>'}</span> {t('overview.breakdown')}
                         </span>
-                        <span className="text-cyan-300">[{stats.counts.contributionsTotal}]</span>
+                        <span className="text-cyan-300">
+                          {t('overview.total', { total: stats.counts.contributionsTotal })}
+                        </span>
                       </div>
                       <div className="mt-4 space-y-3">
                         {breakdown.map((item, idx) => (
@@ -241,9 +250,9 @@ function App() {
                     <div className="rounded-xl border border-cyan-500/30 bg-slate-900/90 p-4 shadow-inner shadow-cyan-500/10">
                       <div className="flex items-center justify-between text-sm text-cyan-400 font-mono">
                         <span className="flex items-center gap-2">
-                          <span className="text-cyan-500">{'>'}</span> 全年节奏线
+                          <span className="text-cyan-500">{'>'}</span> {t('overview.timeline')}
                         </span>
-                        <span className="text-cyan-600 text-xs">[FREQ]</span>
+                        <span className="text-cyan-600 text-xs">{t('overview.frequency')}</span>
                       </div>
                       <div className="mt-4 flex h-28 items-end gap-1.5 bg-slate-950/50 border border-slate-800 rounded-lg p-2">
                         {sparkline.map((value, index) => (
@@ -260,7 +269,7 @@ function App() {
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-300">
                         <div className="rounded-lg border border-cyan-500/30 bg-slate-950/60 px-3 py-2 hover:border-cyan-400 transition-colors">
                           <div className="text-[10px] uppercase tracking-wide text-cyan-500 font-mono">
-                            活跃指数
+                            {t('overview.activityIndex')}
                           </div>
                           <div className="text-lg font-bold font-mono text-cyan-300 tabular-nums">
                             {(sparkline.reduce((a, b) => a + b, 0) / sparkline.length).toFixed(2)}
@@ -268,7 +277,7 @@ function App() {
                         </div>
                         <div className="rounded-lg border border-cyan-500/30 bg-slate-950/60 px-3 py-2 hover:border-cyan-400 transition-colors">
                           <div className="text-[10px] uppercase tracking-wide text-cyan-500 font-mono">
-                            最高峰值
+                            {t('overview.peak')}
                           </div>
                           <div className="text-lg font-bold font-mono text-cyan-300 tabular-nums">
                             {Math.max(...sparkline).toFixed(2)}
@@ -276,7 +285,7 @@ function App() {
                         </div>
                         <div className="rounded-lg border border-cyan-500/30 bg-slate-950/60 px-3 py-2 hover:border-cyan-400 transition-colors">
                           <div className="text-[10px] uppercase tracking-wide text-cyan-500 font-mono">
-                            PR 完成率
+                            {t('overview.prCompletion')}
                           </div>
                           <div className="text-lg font-bold font-mono text-cyan-300 tabular-nums">
                             {Math.min(99, Math.max(12, stats.counts.prs)).toFixed(0)}%
@@ -290,17 +299,17 @@ function App() {
                 <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-slate-950 p-6 shadow-xl shadow-cyan-500/15">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-white font-mono flex items-center gap-2">
-                      <span className="text-cyan-500">{'>'}</span> 语言偏好
+                      <span className="text-cyan-500">{'>'}</span> {t('languages.title')}
                     </h2>
                     <ChartNoAxesColumnIncreasing className="h-5 w-5 text-cyan-400" />
                   </div>
                   <p className="mt-1 text-sm text-cyan-500/70 font-mono">
-                    // Active repos language distribution
+                    {t('languages.hint')}
                   </p>
                   <div className="mt-4 space-y-3">
                     {stats.languages.length === 0 && (
                       <div className="rounded-lg border border-cyan-500/30 bg-slate-950/60 px-3 py-2 text-sm text-cyan-400 font-mono">
-                        [NULL] 还没有公开仓库语言数据。
+                        {t('languages.empty')}
                       </div>
                     )}
                     {stats.languages.map((lang, idx) => (
@@ -328,10 +337,15 @@ function App() {
                   <div className="mt-4 rounded-xl border border-cyan-500/30 bg-slate-950/50 p-4 text-sm text-slate-300">
                     <div className="flex items-center gap-2 text-cyan-300 font-mono">
                       <Calendar className="h-4 w-4" />
-                      <span>今年参与仓库：<span className="text-cyan-400 font-bold">{stats.counts.repos}</span> 个</span>
+                      <span>
+                        {t.rich('languages.reposThisYear', {
+                          count: stats.counts.repos,
+                          value: (chunks) => <span className="text-cyan-400 font-bold">{chunks}</span>,
+                        })}
+                      </span>
                     </div>
                     <p className="mt-2 text-cyan-500/60 font-mono text-xs">
-                      // Updated in {form.year}, reflects active development areas
+                      {t('languages.reposNote', { year: form.year })}
                     </p>
                   </div>
                 </div>
@@ -341,17 +355,15 @@ function App() {
                 <div className="rounded-3xl border border-slate-800/80 bg-gradient-to-br from-slate-900/80 via-slate-900/70 to-slate-950 p-6 shadow-2xl shadow-cyan-500/10">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-xl font-semibold text-white">分享卡片预览</h2>
-                      <p className="text-sm text-slate-400">
-                        适合发朋友圈 / X / 即刻，点击右上角导出高清 PNG。
-                      </p>
+                      <h2 className="text-xl font-semibold text-white">{t('shareCard.title')}</h2>
+                      <p className="text-sm text-slate-400">{t('shareCard.description')}</p>
                     </div>
                     <button
                       onClick={handleDownload}
                       className="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:-translate-y-0.5 transition duration-150"
                     >
                       <Download className="h-4 w-4" />
-                      导出 PNG
+                      {t('shareCard.export')}
                     </button>
                   </div>
 
@@ -386,34 +398,33 @@ function App() {
                       </div>
                       <div className="rounded-full border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-slate-300">
                         <span className="text-cyan-300 font-semibold">
-                          {stats.counts.contributionsTotal}
-                        </span>{' '}
-                        次年度贡献
+                          {t('shareCard.contributions', { count: stats.counts.contributionsTotal })}
+                        </span>
                       </div>
                     </div>
 
                     <p className="mt-4 text-sm text-slate-200">
-                      {stats.profile.bio || '这个开发者用代码在 GitHub 留下足迹。'}
+                      {stats.profile.bio || t('shareCard.bioFallback')}
                     </p>
 
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                       <ShareStat
-                        label="Commits"
+                        label={t('shareCard.shareStats.commits')}
                         value={stats.counts.commits}
                         color="from-cyan-400 to-blue-500"
                       />
                       <ShareStat
-                        label="Pull Requests"
+                        label={t('shareCard.shareStats.prs')}
                         value={stats.counts.prs}
                         color="from-emerald-400 to-teal-500"
                       />
                       <ShareStat
-                        label="Issues"
+                        label={t('shareCard.shareStats.issues')}
                         value={stats.counts.issues}
                         color="from-amber-400 to-orange-500"
                       />
                       <ShareStat
-                        label="Starred"
+                        label={t('shareCard.shareStats.stars')}
                         value={stats.counts.stars}
                         color="from-fuchsia-400 to-violet-500"
                       />
@@ -458,17 +469,19 @@ function App() {
 
                 <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-xl shadow-cyan-500/10">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-white">快速分享</h2>
+                    <h2 className="text-xl font-semibold text-white">{t('fastShare.title')}</h2>
                     <Github className="h-5 w-5 text-cyan-300" />
                   </div>
                   <p className="mt-1 text-sm text-slate-400">
-                    复制一句话战报或直接导出卡片。未登录状态下 GitHub API 存在速率限制，建议填写个人 token。
+                    {t('fastShare.description')}
                   </p>
 
                   <div className="mt-4 rounded-xl border border-slate-800/80 bg-slate-900/60 p-4">
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-500">战报文案</div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                      {t('fastShare.label')}
+                    </div>
                     <p className="mt-2 text-sm text-slate-200 leading-relaxed">
-                      {shareText || '生成数据后，这里会自动写好一段可复制的年度总结。'}
+                      {shareText || t('fastShare.placeholder')}
                     </p>
                     <div className="mt-3 flex gap-2">
                       <button
@@ -483,7 +496,7 @@ function App() {
                         }}
                         className="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 hover:-translate-y-0.5 transition duration-150"
                       >
-                        复制文案
+                        {t('fastShare.copyCta')}
                       </button>
                       <a
                         href={stats?.profile.htmlUrl}
@@ -491,23 +504,23 @@ function App() {
                         rel="noreferrer"
                         className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/25 hover:-translate-y-0.5 transition duration-150"
                       >
-                        去 GitHub 看看
+                        {t('fastShare.viewGithub')}
                       </a>
                     </div>
                   </div>
 
                   <div id="how-it-works" className="mt-5 space-y-3 text-sm text-slate-300">
                     <Step
-                      title="输入 GitHub 用户名，选定年份"
-                      description="默认使用当年数据，可填写个人 token 以避免未登录的速率限制。"
+                      title={t('steps.oneTitle')}
+                      description={t('steps.oneDesc')}
                     />
                     <Step
-                      title="即时请求 GitHub API"
-                      description="聚合 Commit、PR、Issue、Starred、活跃仓库和语言分布，不做本地 mock。"
+                      title={t('steps.twoTitle')}
+                      description={t('steps.twoDesc')}
                     />
                     <Step
-                      title="生成分享卡片与图表"
-                      description="可视化进度条 + 节奏线 + 语言雷达，支持一键复制战报或导出 PNG。"
+                      title={t('steps.threeTitle')}
+                      description={t('steps.threeDesc')}
                     />
                   </div>
                 </div>
@@ -531,6 +544,7 @@ function FormCard({
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
   onChange: (next: FormState) => void
 }) {
+  const t = useTranslations('home')
   return (
     <form
       onSubmit={onSubmit}
@@ -542,14 +556,16 @@ function FormCard({
         </div>
         <div>
           <div className="text-xs uppercase tracking-[0.32em] text-slate-400">GitYear</div>
-          <div className="text-lg font-semibold text-white">数据表单</div>
+          <div className="text-lg font-semibold text-white">{t('form.title')}</div>
         </div>
       </div>
 
-      <label className="mt-6 block text-sm font-medium text-slate-200">GitHub 用户名</label>
+      <label className="mt-6 block text-sm font-medium text-slate-200">
+        {t('form.usernameLabel')}
+      </label>
       <input
         className="mt-2 w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none ring-0 transition focus:border-cyan-400"
-        placeholder="例如: gaearon"
+        placeholder={t('form.usernamePlaceholder')}
         value={form.username}
         onChange={(event) =>
           onChange({
@@ -560,7 +576,7 @@ function FormCard({
         required
       />
 
-      <label className="mt-4 block text-sm font-medium text-slate-200">年份</label>
+      <label className="mt-4 block text-sm font-medium text-slate-200">{t('form.yearLabel')}</label>
       <div className="mt-2 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3">
         <Calendar className="h-4 w-4 text-slate-400" />
         <input
@@ -578,10 +594,12 @@ function FormCard({
         />
       </div>
 
-      <label className="mt-4 block text-sm font-medium text-slate-200">GitHub Token (可选)</label>
+      <label className="mt-4 block text-sm font-medium text-slate-200">
+        {t('form.tokenLabel')}
+      </label>
       <textarea
         className="mt-2 w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
-        placeholder="建议使用 fine-grained token，仅勾选 public_repo，避免速率限制。"
+        placeholder={t('form.tokenPlaceholder')}
         value={form.token}
         onChange={(event) =>
           onChange({
@@ -599,7 +617,7 @@ function FormCard({
           className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/25 transition duration-150 hover:-translate-y-0.5 disabled:opacity-60"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {loading ? '拉取数据中...' : '生成分享卡片'}
+          {loading ? t('form.loading') : t('form.submit')}
         </button>
         <button
           type="button"
@@ -611,7 +629,7 @@ function FormCard({
           }
           className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-medium text-white hover:border-cyan-400/60 transition"
         >
-          用示例
+          {t('form.sample')}
         </button>
       </div>
     </form>
