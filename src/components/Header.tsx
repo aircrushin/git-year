@@ -19,7 +19,7 @@ export default function Header() {
         <div className="flex items-center gap-3">
           <LocaleSwitcher />
           <a
-            href="https://github.com/"
+            href="https://github.com/aircrushin/git-year"
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 border border-cyan-500/30 text-sm font-medium text-cyan-300 hover:border-cyan-400 hover:text-cyan-200 transition-all duration-200"

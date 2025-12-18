@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import {
   Calendar,
   ChartNoAxesColumnIncreasing,
+  ChevronDown,
   Download,
   GitCommit,
   GitPullRequest,
@@ -12,7 +13,7 @@ import {
   Sparkles,
   Star,
 } from 'lucide-react'
-import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { useMemo, useRef, useState, useEffect, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
 type GithubStats = {
@@ -51,7 +52,7 @@ export const Route = createFileRoute('/')({ component: App })
 function App() {
   const t = useTranslations('home')
   const [form, setForm] = useState<FormState>({
-    username: 'vercel',
+    username: '',
     year: currentYear,
     token: '',
   })
@@ -577,22 +578,15 @@ function FormCard({
       />
 
       <label className="mt-4 block text-sm font-medium text-slate-200">{t('form.yearLabel')}</label>
-      <div className="mt-2 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3">
-        <Calendar className="h-4 w-4 text-slate-400" />
-        <input
-          type="number"
-          min="2008"
-          max={currentYear}
-          className="flex-1 bg-transparent text-white outline-none"
-          value={form.year}
-          onChange={(event) =>
-            onChange({
-              ...form,
-              year: Number(event.target.value) || currentYear,
-            })
-          }
-        />
-      </div>
+      <YearPicker
+        value={form.year}
+        onChange={(year) =>
+          onChange({
+            ...form,
+            year,
+          })
+        }
+      />
 
       <label className="mt-4 block text-sm font-medium text-slate-200">
         {t('form.tokenLabel')}
@@ -698,6 +692,135 @@ function Badge({ children }: { children: ReactNode }) {
       <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
       {children}
     </span>
+  )
+}
+
+function YearPicker({ value, onChange }: { value: number; onChange: (year: number) => void }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const startYear = 2008
+  const endYear = currentYear
+  const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      // Scroll to selected year when opening
+      setTimeout(() => {
+        if (listRef.current) {
+          const selectedElement = listRef.current.querySelector(`[data-year="${value}"]`)
+          selectedElement?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
+      }, 100)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen, value])
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      setIsOpen(false)
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      setIsOpen(!isOpen)
+    }
+  }
+
+  const quickYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3]
+
+  return (
+    <div ref={containerRef} className="relative mt-2">
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            onKeyDown={handleKeyDown}
+            className="w-full flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition-all duration-200 hover:border-cyan-400/60 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            aria-label="Select year"
+            aria-expanded={isOpen ? 'true' : 'false'}
+            aria-haspopup="listbox"
+          >
+            <Calendar className="h-4 w-4 text-slate-400 flex-shrink-0" />
+            <span className="flex-1 text-left font-medium">{value}</span>
+            <ChevronDown
+              className={`h-4 w-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ${
+                isOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {isOpen && (
+            <div className="absolute z-50 mt-2 w-full rounded-xl border border-slate-800 bg-slate-900 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl overflow-hidden animate-[fadeIn_0.2s_ease-out,slideDown_0.2s_ease-out]">
+              <div className="p-2 border-b border-slate-800">
+                <div className="text-xs uppercase tracking-wider text-slate-500 px-3 py-1.5 font-medium">
+                  Quick Select
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {quickYears.map((year) => (
+                    <button
+                      key={year}
+                      type="button"
+                      onClick={() => {
+                        onChange(year)
+                        setIsOpen(false)
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 transform hover:scale-105 ${
+                        value === year
+                          ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
+                          : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div
+                ref={listRef}
+                className="max-h-64 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+                role="listbox"
+              >
+                {years.map((year) => (
+                  <button
+                    key={year}
+                    type="button"
+                    data-year={year}
+                    onClick={() => {
+                      onChange(year)
+                      setIsOpen(false)
+                    }}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-all duration-150 ${
+                      value === year
+                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 font-semibold border-l-2 border-cyan-400'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                    role="option"
+                    aria-selected={value === year ? 'true' : 'false'}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{year}</span>
+                      {value === year && (
+                        <div className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
